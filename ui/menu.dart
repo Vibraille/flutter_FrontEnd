@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vibra_braille/ui/login.dart';
 import './settings.dart';
 import './notes.dart';
 
@@ -45,6 +46,37 @@ class Menu {
               // ...
               // Then close the drawer
               //Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            title: menuText('Logout'),
+            onTap: () {
+              showDialog<String>(
+                context: context,
+                builder: (BuildContext context) => AlertDialog(
+                  //title: const Text('Save Note?'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () {
+                        /*Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                      (route) => false); */
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const LoginPage(),
+                          ),
+                        );
+                    },
+                      child: const Text('Log out', semanticsLabel: "Log out",),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, 'Cancel'),
+                      child: const Text('Cancel', semanticsLabel: "Cancel",),
+                    ),
+                  ],
+                ),
+              );
             },
           ),
         ],

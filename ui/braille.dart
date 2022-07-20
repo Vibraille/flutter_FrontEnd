@@ -53,19 +53,19 @@ TextButton popUp(BuildContext context) {
         context: context,
         builder: (BuildContext context) => AlertDialog(
           //title: const Text('Save Note?'),
-          content: const Text('Save to notes?'),
+          content: const Text('Save to notes?', semanticsLabel: "Would you like to save to notes?"),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.pop(context, 'Edit'),
-              child: const Text('Edit'),
+              child: const Text('Edit', semanticsLabel: "Edit Note",),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, 'Save'),
-              child: const Text('Save'),
+              child: const Text('Save', semanticsLabel: "Save to notes ",),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: const Text('Cancel', semanticsLabel: "Cancel",),
             ),
           ],
         ),

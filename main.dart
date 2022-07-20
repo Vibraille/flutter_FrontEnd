@@ -20,23 +20,3 @@ Future<void> main() async{
 }
 
 
-/*
-class VibraBraille extends StatelessWidget {
-  const VibraBraille({Key? key}) : super(key: key);
-
-  get frontCamera => null;
-
-   @override
-  Widget build(BuildContext context) {
-    return  MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home : TakePictureScreen(
-        // Pass the appropriate camera to the TakePictureScreen widget.
-        camera: frontCamera,
-      )
-    );
-  }
-}
-
-
-*/

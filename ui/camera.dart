@@ -32,6 +32,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
       widget.camera,
       // Define the resolution to use.
       ResolutionPreset.veryHigh,
+      enableAudio: false,
     );
 
     // Next, initialize the controller. This returns a Future.
@@ -93,8 +94,6 @@ class TakePictureScreenState extends State<TakePictureScreen> {
           }
         },
         child: const Icon(Icons.camera_alt),
-
-
       ),
 
     );
