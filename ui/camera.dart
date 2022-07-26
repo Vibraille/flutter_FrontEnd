@@ -1,42 +1,38 @@
 import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import './menu.dart';
+import 'package:flutter/services.dart';
+import 'menu/menu.dart';
 import './braille.dart';
 
 // A screen that allows users to take a picture using a given camera.
-class TakePictureScreen extends StatefulWidget {
-  const TakePictureScreen({
-    super.key,
-    required this.camera,
-  });
-
-  final CameraDescription camera;
+class Camera extends StatefulWidget {
+  const Camera({Key? key}) : super(key: key);
 
   @override
-  TakePictureScreenState createState() => TakePictureScreenState();
+  State<Camera> createState() => TakePictureScreenState();
 }
 
-class TakePictureScreenState extends State<TakePictureScreen> {
+class TakePictureScreenState extends State<Camera> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
 
-
   @override
-  void initState() {
+  Future<void> initState() async {
     super.initState();
     // To display the current output from the Camera,
+    WidgetsFlutterBinding.ensureInitialized();
+    final cameras = await availableCameras();
     // create a CameraController.
-    _controller = CameraController(
-      // Get a specific camera from the list of available cameras.
-      widget.camera,
-      // Define the resolution to use.
+    _controller = CameraController( cameras.first,
       ResolutionPreset.veryHigh,
       enableAudio: false,
     );
 
+
     // Next, initialize the controller. This returns a Future.
     _initializeControllerFuture = _controller.initialize();
+    _controller.setFlashMode(FlashMode.off);
   }
 
   @override
@@ -54,22 +50,32 @@ class TakePictureScreenState extends State<TakePictureScreen> {
       // camera preview. Use a FutureBuilder to display a loading spinner until the
       // controller has finished initializing.
       drawer: Menu(context).menuDrawer,
-      body: FutureBuilder<void>(
-        future: _initializeControllerFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            // If the Future is complete, display the preview.
-            return CameraPreview(_controller);
-          } else {
-            // Otherwise, display a loading indicator.
-            return const Center(child: CircularProgressIndicator());
-          }
-        },
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
+
+      body: SizedBox(
+        height: MediaQuery.of(context).size.height,
+        child:
+        FutureBuilder<void>(
+          future: _initializeControllerFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done) {
+              // If the Future is complete, display the preview.
+              return CameraPreview(_controller);
+            } else {
+              // Otherwise, display a loading indicator.
+              return const Center(child: CircularProgressIndicator());
+            }
+          },
+        )),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: SizedBox(
+        width: 100,
+        height: 120,
+        child:
+        FloatingActionButton(
+        enableFeedback: true,
         // Provide an onPressed callback.
         onPressed: () async {
+          HapticFeedback.vibrate();
           // Take the Picture in a try / catch block. If anything goes wrong,
           // catch the error.
           try {
@@ -93,10 +99,10 @@ class TakePictureScreenState extends State<TakePictureScreen> {
             print(e);
           }
         },
-        child: const Icon(Icons.camera_alt),
+        child: const Icon(Icons.camera_alt, size: 60,),
       ),
 
-    );
+    ));
   }
 }
 

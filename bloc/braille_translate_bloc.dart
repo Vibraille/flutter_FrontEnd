@@ -1,30 +1,34 @@
 import 'dart:async';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../data/brailleData.dart';
-import './bloc.dart';
+import '../data/notesData.dart';
 
-class BrailleBloc implements Bloc {
+import 'package:rxdart/rxdart.dart';
+
+class BrailleBloc {
   final _client = BrailleClient();
-  final _brailleController = StreamController<String?>();
-  Sink<String?> get braille => _brailleController.sink;
-  late Stream<String?> translateStream;
+  final _brailleController = StreamController<String>();
+  Sink<String> get imagePath => _brailleController.sink;
+  late Stream<Note?> translateStream;
+  late String bearer;
+  late SharedPreferences sp;
 
-  BrailleBloc() { /*
-    translateStream = _brailleController.stream
-        .startWith(null) // 1
-        .debounceTime(const Duration(milliseconds: 100)) // 2
-        .switchMap(
-      // 3hg
-          (query) => _client
-          .fetchArticles(query)
-          .asStream() // 4
-          .startWith(null), // 5
+  BrailleBloc() {
+    getPreferences().whenComplete( () => {
+      bearer = sp.getString("accessToken")!});
 
-    );*/
+      translateStream = _brailleController.stream.switchMap(
+          (imagePath) => _client.fetchTranslation(imagePath, bearer).asStream());
   }
 
-  @override
+  Future getPreferences() async{
+    sp = await SharedPreferences.getInstance();
+  }
+
   void dispose() {
     _brailleController.close();
+
   }
 }

@@ -1,107 +1,139 @@
 import 'dart:async';
-import 'dart:convert' show json;
+import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
 class NotesClient {
-  /*final _host = 'api.raywenderlich.com';
-  final _contextRoot = 'api';
+  final _noteUrl = "http://ec2-3-142-74-196.us-east-2.compute.amazonaws.com:8000/notes/";
+  // /notes. Get all notes associated with user
+  //   /notes/id/ details of selected notes
+  // /notes/id/edit
+  // /notes/id/delete note
 
-  Future<List<Note>?> fetchArticles(String? query) async {
-    Map<String, Object> params = {
-      'filter[content_types][]': 'article',
-      'page[size]': '25',
-    };
 
-    if (query != null && query.isNotEmpty) {
-      params['filter[q]'] = query;
+  Future<List<Note>?> fetchAllNotes(String bearer) async {
+    final response = await http.get(
+        Uri.parse(_noteUrl),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': "Bearer $bearer",
+        }
+    );
+    // Status code for no text detected
+    if (response.statusCode == 200) {
+      List<Map<String, dynamic> > notesList = List.from(jsonDecode(response.body));
+      List<Note> notes = <Note>[];
+      for (int i = 0; i < notesList.length; i++) {
+        Map<String, dynamic>  noteJson = notesList[i];
+        Note nextNote = Note.fromJson(noteJson["fields"], noteJson["pk"]);
+        notes.add(nextNote);
+      }
+      return notes;
+
+    } else if (response.statusCode == 404) {
+      return null; // No notes available
+    } else {
+      // If the server did not return a 201 CREATED response,
+      // then throw an exception.
+      throw Exception('Failed to retrieve all notes.');
     }
-
-    final results = await request(path: 'contents', parameters: params);
-    return results['data'].map<Note>(Note.fromJson).toList(
-        growable: false);
   }
 
-  Future<Note?> getDetailArticle(String id) async {
-    final results = await request(path: 'contents/$id', parameters: {});
-    final data = results['data'];
-    return Note.fromJson(data);
+  Future<Note?> editNoteDetails(int id , String bearer, String title) async {
+    final response = await http.put(
+      Uri.parse("$_noteUrl$id/edit"),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': "Bearer $bearer",
+      },
+      body: jsonEncode(<String, String>{
+        "title": title,
+       // "contents": contents
+      }),
+
+    );
+    // Status code for no text detected
+    if (response.statusCode == 200) {
+      Map<String, dynamic> noteJson = List.from(jsonDecode(response.body))[0];
+      return Note.fromJson(noteJson["fields"], noteJson["pk"]);
+    } else if ((response.statusCode == 401)) {
+      // unathorized
+      return null;
+
+    } else if ((response.statusCode == 404)) {
+      // failed to retrieve
+      return null;
+    } else {
+      // If the server did not return a 201 CREATED response,
+      // then throw an exception.
+      throw Exception('Failed to retrieve node details.');
+    }
   }
 
-  Future<Map> request({
-    required String path,
-    required Map<String, Object> parameters,
-  }) async {
-    final uri = Uri.https(_host, '$_contextRoot/$path', parameters);
-    final headers = _headers;
-    final results = await http.get(uri, headers: headers);
-    final jsonObject = json.decode(results.body);
-    return jsonObject;
+
+  Future<Note?> fetchNoteDetails(int id , String bearer) async {
+    final response = await http.get(
+        Uri.parse("$_noteUrl$id/"),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': "Bearer $bearer",
+        }
+    );
+    // Status code for no text detected
+    if (response.statusCode == 200) {
+      Map<String, dynamic> noteJson = List.from(jsonDecode(response.body))[0];
+      return Note.fromJson(noteJson["fields"], noteJson["pk"]);
+    } else if  (response.statusCode == 404) {
+      return null; // no note found
+    } else {
+      // If the server did not return a 201 CREATED response,
+      // then throw an exception.
+      throw Exception('Failed to retrieve node details.');
+    }
   }
 
-  Map<String, String> get _headers =>
-      {
-        'content-type': 'application/vnd.api+json; charset=utf-8',
-        'Accept': 'application/json',
-      }; */
+  Future<String> deleteNote(int id, String bearer) async {
+    final response = await http.delete(
+        Uri.parse("$_noteUrl$id/delete"),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': "Bearer $bearer",
+        }
+    );
+    // Status code for no text detected
+    if (response.statusCode == 200) {
+      return "Note deleted successfully";
+    } else if (response.statusCode == 401) {
+      // not authorized
+      return "Note failed to delete, try again";
+    } else {
+      // If the server did not return a 201 CREATED response,
+      // then throw an exception.
+      throw Exception('Failed to delete Note.');
+    }
+  }
 }
-  class Note {
-  /*late final String id;
-  late final String? type;
-  late final Attributes? attributes;
-  late final Links? links;
 
-  Article.fromJson(dynamic json)
-      : id = json['id'],
-  type = json['type'],
-  attributes = Attributes.fromJson(json['attributes']),
-  links = Links.fromJson(json['links']);
+class Note {
+  final String date;
+  final String ascii;
+  final String braille;
+  final String title;
+  final int noteId;
+  final String binary;
+
+  const Note({required this.date, required this.ascii, required this.braille,
+              required this.title, required this.noteId, required this.binary});
+
+  factory Note.fromJson(Map<String, dynamic> json, int id) {
+    return Note(
+        date: json["created"],
+        ascii: json["ascii_text"],
+        braille: json["braille_format"],
+        title: json["title"],
+        noteId: id,
+        binary: json["braille_binary"]
+    );
   }
-
-  class Attributes {
-  late final String? uri;
-  late final String? name;
-  late final String? description;
-  late final String? released_at;
-  late final bool? free;
-  late final String? difficulty;
-  late final String? content_type;
-  late final int duration;
-  late final double? popularity;
-  late final String? technology_triple_string;
-  late final String? contributor_string;
-  late final String? ordinal;
-  late final bool? professional;
-  late final String? description_plain_text;
-  late final int? video_identifier;
-  late final int? parent_name;
-  late final bool? accessible;
-  late final String? card_artwork_url;
-
-  Attributes.fromJson(Map json)
-      : uri = json['uri'],
-  name = json['name'],
-  description = json['description'],
-  released_at = json['released_at'],
-  free = json['free'],
-  difficulty = json['difficulty'],
-  content_type = json['content_type'],
-  duration = json['duration'],
-  popularity = json['popularity'],
-  technology_triple_string = json['technology_triple_string'],
-  contributor_string = json['contributor_string'],
-  ordinal = json['ordinal'],
-  professional = json['professional'],
-  description_plain_text = json['description_plain_text'],
-  video_identifier = json['video_identifier'],
-  parent_name = json['parent_name'],
-  accessible = json['accessible'],
-  card_artwork_url = json['card_artwork_url'];
-  }
-
-  class Links {
-  late final String? self;
-
-  Links.fromJson(Map json) : self = json['self'];
- */ }
+}
 
