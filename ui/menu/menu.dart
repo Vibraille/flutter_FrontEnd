@@ -1,61 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:vibra_braille/ui/User/login.dart';
+import 'package:vibra_braille/ui/auth/login.dart';
 import 'settings.dart';
 import '../notes/notes.dart';
 
 class Menu {
   late Drawer menu;
+  late final SharedPreferences sp;
 
-  Menu(BuildContext context) {
+
+  Menu(BuildContext context, SharedPreferences preferences) {
+    sp = preferences;
     menu = Drawer(
       // Add a ListView to the drawer. This ensures the user can scroll
       // through the options in the drawer if there isn't enough vertical
       // space to fit everything.
       child: ListView(
-        // Important: Remove any padding from the ListView.
-        padding: const EdgeInsets.only(top: 30),
-        children: [
-          //const DrawerHeader(
-          //child: Text('Drawer Header'),
-          //),
-          ListTile(
-            title: menuText('Notes'),
+        children: [ Column( children: [ const Padding(padding: EdgeInsets.only(top: 75)),
+          Image.asset('assets/logo.png', height: 150),
+          const Padding(padding: EdgeInsets.only(top: 20)),
+          Text(sp.get("username").toString(),
+          style: const TextStyle(fontSize: 40),),
+          const Padding(padding: EdgeInsets.only(top: 20)),
+           const Divider(thickness: 2,)]),
+          ListTile( contentPadding: const EdgeInsets.only(top: 30, left: 40),
+             leading: const Icon(Icons.sticky_note_2_outlined, size: 45),
+            title: Transform.translate( offset: const Offset(-35, 0),
+            child:  menuText('Notes')),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => const NotesPage(),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            title: menuText('Settings'),
+                  builder: (context) => NotesPage(sp: sp),
+                ));}),
+          ListTile( contentPadding: const EdgeInsets.only(top: 15, left: 40),
+              leading: const Icon(Icons.settings, size: 45,),
+            title: Transform.translate( offset: const Offset(-15, 0),
+              child:  menuText('Settings')),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => const SettingsPage(),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            
-            title: menuText('Tutorial'),
-            onTap: () {
-              // Update the state of the app
-              // ...
-              // Then close the drawer
-              //Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            title: menuText('Logout'),
+                ));}),
+          // ListTile(  title: menuText('Tutorial'),
+          //   onTap: () {
+          //   },),
+
+          ListTile( contentPadding: const EdgeInsets.only(top: 15, left: 45),
+            leading: const Icon(Icons.logout, size: 42,color: Colors.redAccent,),
+            title: Transform.translate( offset: const Offset(-25, 0),
+                child: menuText('Logout')),
             onTap: () {
               showDialog<String>(
                 context: context,
                 builder: (BuildContext context) => AlertDialog(
-                  //title: const Text('Save Note?'),
                   content: const Text('Are you sure you want to logout?'),
                   actions: <Widget>[
                     TextButton(
@@ -64,17 +61,14 @@ class Menu {
                         Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const LoginPage()),
                       (route) => false);
-
                     },
                       child: const Text('Log out', semanticsLabel: "Log out",),
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, 'Cancel'),
                       child: const Text('Cancel', semanticsLabel: "Cancel",),
-                    ),
-                  ],
-                ),
-              );
+                    )]
+                ),);
             },
           ),
         ],
@@ -89,17 +83,18 @@ class Menu {
     return Text(text,
        textAlign: TextAlign.center,
        semanticsLabel: text,
-        style: const TextStyle(height: 2, fontSize: 45,
+        style: const TextStyle( fontSize: 45,
         ),
     );
   }
 
+
   removePreferences() async {
-    final SharedPreferences sp = await SharedPreferences.getInstance();
     sp.remove("email");
     sp.remove("username");
     sp.remove("phone");
     sp.remove("refreshToken");
     sp.remove("accessToken");
+    sp.remove("tokenExpiration");
   }
 }

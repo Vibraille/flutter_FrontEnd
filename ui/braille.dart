@@ -1,24 +1,27 @@
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import '../bloc/braille_translate_bloc.dart';
 import '../bloc/notes_bloc.dart';
 import '../data/notesData.dart';
+import 'notes/note_details.dart';
 
 class DisplayBrailleScreen extends StatefulWidget {
   final String imagePath;
-  const DisplayBrailleScreen({super.key, required this.imagePath});
+  final SharedPreferences sp;
+  const DisplayBrailleScreen({super.key, required this.imagePath, required this.sp});
 
   @override
   State<DisplayBrailleScreen> createState() => _DisplayBrailleScreenState();
 }
 
-//Image.file(File(widget.imagePath))
+
 class _DisplayBrailleScreenState extends State<DisplayBrailleScreen> {
   //int _numOfBrailleCells = 4;
   late int noteId;
+  final _titleController = TextEditingController();
+  String title = "";
 
 
   @override
@@ -33,15 +36,12 @@ class _DisplayBrailleScreenState extends State<DisplayBrailleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Braille Page'),
-        actions: [popUp(context)], backgroundColor: Colors.lightBlue,),
-      // The image is stored as a file on the device. Use the `Image.file`
-      // constructor with the given path to display the image.
+      appBar: AppBar( actions: [popUp(context)], backgroundColor: Colors.lightBlue,),
       body:
     Container(
       alignment: Alignment.center,
       height: MediaQuery.of(context).size.height,
-      padding: EdgeInsets.only(top: MediaQuery.of(context).size.height *.12),
+      padding: EdgeInsets.only(top: MediaQuery.of(context).size.height *.08),
       child: _buildResult()
 
     ),//,
@@ -68,26 +68,28 @@ class _DisplayBrailleScreenState extends State<DisplayBrailleScreen> {
             context: context,
             builder: (BuildContext context) =>
                 AlertDialog(
-                  //title: const Text('Save Note?'),
                   content: const Text('Save to notes?',
                       semanticsLabel: "Would you like to save to notes?"),
                   actions: <Widget>[
                     TextButton(
-                      onPressed: () => Navigator.pop(context, 'Edit'), // pop context
-                      child: const Text('Edit', semanticsLabel: "Edit Note",),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, 'Save'), // pop context
+                      onPressed: () => {Navigator.pop(context),
+                        Navigator.pop(context),}, // pop context
                       child: const Text(
-                        'Save', semanticsLabel: "Save to notes ",),
+                         'Save', semanticsLabel: "Save to notes ",),
                     ),
                     TextButton(
                       onPressed: () => {
                         deleteNote(),
                         Navigator.of(context).pop(),
-
+                        Navigator.pop(context),
                         },
-                      child: const Text('Cancel', semanticsLabel: "Cancel",),
+                      child: const Text("Don't Save", semanticsLabel: "Don't Save",),
+                    ),
+                    TextButton(
+                      onPressed: () => {
+                        Navigator.of(context).pop(),
+                      },
+                      child: const Text("Cancel", semanticsLabel: "Cancel",),
                     ),
                   ],
                 ),
@@ -99,47 +101,61 @@ class _DisplayBrailleScreenState extends State<DisplayBrailleScreen> {
 
 
   Widget _buildResult() {
-    final bloc = BrailleBloc();
+
+    final bloc = BrailleBloc(widget.sp);
     bloc.imagePath.add(widget.imagePath);
     return StreamBuilder<Note?>(
       stream: bloc.translateStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: AlertDialog(
-          title: const Text('No text detected', semanticsLabel: "No text detected in image",
-            style: TextStyle(fontSize: 30),),
-          content: const Text('There was no text detected! \nPlease try again',
-              semanticsLabel: "There was no text detected! Please try again",
-          style: TextStyle(fontSize: 25),),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () =>  { Navigator.pop(context, 'Cancel')
-              },
-              child: const Text('Try again', semanticsLabel: "Try again", style: TextStyle(fontSize: 25),),
-            )]
+        } else if (snapshot.data != null) {
+          noteId = snapshot.data!.noteId;
+          return ListView(
+            scrollDirection: Axis.horizontal,
+            shrinkWrap: true,
+            children: BrailleTranslation(snapshot.data!.binary)
+                .getBrailleTranslation(),
+          );
+
+        } else {
+          return Center(child: AlertDialog( scrollable: true,
+              title: const Text('No text detected', semanticsLabel: "No text detected in image",
+                style: TextStyle(fontSize: 30),),
+              content: const Text('There was no text detected! \nPlease try again',
+                semanticsLabel: "There was no text detected! Please try again",
+                style: TextStyle(fontSize: 25),),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () =>  { Navigator.of(context).pop()
+                  },
+                  child: const Text('Try again', semanticsLabel: "Try again", style: TextStyle(fontSize: 25),),
+                )]
           ));
         }
-        noteId = snapshot.data!.noteId;
-        return ListView(
-                    scrollDirection: Axis.horizontal,
-                     shrinkWrap: true,
-                    children: BrailleTranslation(snapshot.data!.binary).getBrailleTranslation(), // num of braillecells here
-                );
       },
     );
 
   }
 
-   Widget deleteNote() {
-      final bloc = NoteBloc();
+    deleteNote() {
+      final bloc = NoteBloc(widget.sp);
       bloc.noteId.add(noteId);
-      return StreamBuilder<String?>(
-          stream: bloc.noteDeleteStream,
-          builder: (context, snapshot) {
-          return const Center(child: CircularProgressIndicator());
-     });
+      bloc.noteDeleteStream;
+      WidgetsBinding.instance.addPostFrameCallback((_){ showDialog(
+          context: context,
+          builder: (BuildContext context) {
+        return StreamBuilder<String?>(
+            stream: bloc.noteDeleteStream,
+            builder: (context, snapshot) {
+
+              return const Center(child: CircularProgressIndicator());
+            });
+          },
+      );});
+      Future.delayed(const Duration(seconds: 1), () {
+        Navigator.pop(context);
+      });
   }
 }
 class BrailleTranslation {
@@ -195,7 +211,7 @@ class BrailleCell {
   late bool isSpace;
   late bool _lastCell;
   late BrailleCell next;
-  List<bool> _read = <bool>[false, false, false, false, false, false];
+  List<bool> read = <bool>[false, false, false, false, false, false];
   late GridView _brailleCell;
 
 
@@ -211,7 +227,7 @@ class BrailleCell {
     List<int> positions = [0, 3, 1, 4, 2, 5]; //110000
     for (int i = 0; i < binaryBraille.length; i++) {
       if (binaryBraille[positions[i]] == "0") {
-        _read[positions[i]] = true;
+        read[positions[i]] = true;
         brailleCells.add(
             const FloatingActionButton(
               backgroundColor: Colors.white38,
@@ -227,7 +243,7 @@ class BrailleCell {
               onPressed: () {
                 if (enabled) {
                     HapticFeedback.vibrate();
-                    _read[positions[i]] = true;
+                    read[positions[i]] = true;
                     if (isAllRead()) {
                       if (!_lastCell) {
                         //call next set of cells and set state
@@ -252,7 +268,7 @@ class BrailleCell {
   }
 
   bool isAllRead() {
-    return !_read.contains(false);
+    return !read.contains(false);
   }
 
   setNextCell(BrailleCell nextCell) {

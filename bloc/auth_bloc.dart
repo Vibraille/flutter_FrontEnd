@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:rxdart/rxdart.dart';
 import '../data/authData.dart';
-import '../ui/user/register.dart';
+import 'package:vibra_braille/ui/auth/register.dart';
 
 class AuthBloc{
   final _client = AuthClient();
@@ -24,9 +24,10 @@ class AuthBloc{
 
   final _refreshTokensController = StreamController<String>();
   Sink<String> get token =>_refreshTokensController.sink;
-  late Stream<String?> tokenStream;
+  late Stream<List<String>?> tokenStream;
 
   AuthBloc() {
+
     registerStream = _registerController.stream.switchMap(
             (user) => _client.registerUser(
             user.username!, user.email!,

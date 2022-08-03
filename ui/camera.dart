@@ -2,12 +2,52 @@ import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'menu/menu.dart';
 import './braille.dart';
 
 // A screen that allows users to take a picture using a given camera.
+class CameraPage extends StatefulWidget {
+  final SharedPreferences sp;
+  const CameraPage({super.key, required this.sp,});
+
+  @override
+  State<CameraPage> createState() => CameraInit();
+}
+
+class CameraInit extends State<CameraPage> {
+  late final Future<List<CameraDescription>> cameras = availableCameras();
+
+  @override
+   initState() {
+    super.initState();
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body:
+      SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: FutureBuilder<List<CameraDescription>>(
+              future: cameras,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  // If the Future is complete, display the preview.
+                  return Camera(camera: snapshot.data!.first, sp: widget.sp);
+                }
+                return const Center(child: CircularProgressIndicator());
+              }))
+    );
+  }
+}
+
+
+
 class Camera extends StatefulWidget {
-  const Camera({Key? key}) : super(key: key);
+
+  const Camera({super.key, required this.camera,  required this.sp});
+  final CameraDescription camera;
+  final SharedPreferences sp;
 
   @override
   State<Camera> createState() => TakePictureScreenState();
@@ -18,22 +58,15 @@ class TakePictureScreenState extends State<Camera> {
   late Future<void> _initializeControllerFuture;
 
   @override
-  Future<void> initState() async {
+  void initState() {
     super.initState();
-    // To display the current output from the Camera,
-    WidgetsFlutterBinding.ensureInitialized();
-    final cameras = await availableCameras();
-    // create a CameraController.
-    _controller = CameraController( cameras.first,
+    _controller = CameraController(widget.camera,
       ResolutionPreset.veryHigh,
       enableAudio: false,
     );
-
-
-    // Next, initialize the controller. This returns a Future.
     _initializeControllerFuture = _controller.initialize();
-    _controller.setFlashMode(FlashMode.off);
   }
+
 
   @override
   void dispose() {
@@ -44,28 +77,24 @@ class TakePictureScreenState extends State<Camera> {
 
   @override
   Widget build(BuildContext context) {
+    // create a CameraController.
+    // Future.delayed(const Duration(milliseconds: 1), () {
+    //   Navigator.pop(context);
+    // });
     return Scaffold(
       appBar: AppBar(),
-      // You must wait until the controller is initialized before displaying the
-      // camera preview. Use a FutureBuilder to display a loading spinner until the
-      // controller has finished initializing.
-      drawer: Menu(context).menuDrawer,
-
+      drawer: Menu(context, widget.sp).menuDrawer,
       body: SizedBox(
         height: MediaQuery.of(context).size.height,
-        child:
-        FutureBuilder<void>(
-          future: _initializeControllerFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.done) {
-              // If the Future is complete, display the preview.
-              return CameraPreview(_controller);
-            } else {
-              // Otherwise, display a loading indicator.
-              return const Center(child: CircularProgressIndicator());
-            }
-          },
-        )),
+        child: FutureBuilder<void>(
+                future: _initializeControllerFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) { //&& sp.containsKey("username")
+                    // If the Future is complete, display the preview.
+                    return CameraPreview(_controller);
+                  }
+                  return const Center(child: CircularProgressIndicator());
+                })),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: SizedBox(
         width: 100,
@@ -90,7 +119,7 @@ class TakePictureScreenState extends State<Camera> {
             await Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => DisplayBrailleScreen(
-                  imagePath: image.path,
+                  imagePath: image.path, sp: widget.sp
                 ),
               ),
             );

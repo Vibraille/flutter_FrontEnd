@@ -1,11 +1,10 @@
 
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:vibra_braille/ui/camera.dart';
-import 'package:vibra_braille/ui/user/login.dart';
+import 'package:vibra_braille/ui/auth/login.dart';
 
 Future<void> main() async{
-
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
       const MaterialApp(
         debugShowCheckedModeBanner: false,

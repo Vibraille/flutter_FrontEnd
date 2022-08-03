@@ -1,30 +1,30 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:http/http.dart' as http;
 
 class NotesClient {
   final _noteUrl = "http://ec2-3-142-74-196.us-east-2.compute.amazonaws.com:8000/notes/";
-  // /notes. Get all notes associated with user
-  //   /notes/id/ details of selected notes
-  // /notes/id/edit
-  // /notes/id/delete note
-
 
   Future<List<Note>?> fetchAllNotes(String bearer) async {
+
     final response = await http.get(
         Uri.parse(_noteUrl),
         headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
           'Authorization': "Bearer $bearer",
+          'Content-Type': "multipart/form-data"
         }
     );
+    log(response.statusCode.toString());
     // Status code for no text detected
     if (response.statusCode == 200) {
-      List<Map<String, dynamic> > notesList = List.from(jsonDecode(response.body));
+      String jsonStr = json.decode(response.body).toString();
+      jsonStr =  jsonStr.substring(1, jsonStr.length - 2);
+      List<String> notesList  = jsonStr.split("}, ");
       List<Note> notes = <Note>[];
       for (int i = 0; i < notesList.length; i++) {
-        Map<String, dynamic>  noteJson = notesList[i];
+        Map<String, dynamic>  noteJson = jsonDecode("${notesList[i]}}");
         Note nextNote = Note.fromJson(noteJson["fields"], noteJson["pk"]);
         notes.add(nextNote);
       }
@@ -43,12 +43,11 @@ class NotesClient {
     final response = await http.put(
       Uri.parse("$_noteUrl$id/edit"),
       headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
+        'Content-Type': 'application/json',
         'Authorization': "Bearer $bearer",
       },
       body: jsonEncode(<String, String>{
         "title": title,
-       // "contents": contents
       }),
 
     );
@@ -75,7 +74,7 @@ class NotesClient {
     final response = await http.get(
         Uri.parse("$_noteUrl$id/"),
         headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
+          'Content-Type': 'application/json',
           'Authorization': "Bearer $bearer",
         }
     );
@@ -93,13 +92,15 @@ class NotesClient {
   }
 
   Future<String> deleteNote(int id, String bearer) async {
+
     final response = await http.delete(
         Uri.parse("$_noteUrl$id/delete"),
         headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
+          'Content-Type': 'application/json',
           'Authorization': "Bearer $bearer",
         }
     );
+    // log(response.body.toString());
     // Status code for no text detected
     if (response.statusCode == 200) {
       return "Note deleted successfully";
@@ -107,8 +108,6 @@ class NotesClient {
       // not authorized
       return "Note failed to delete, try again";
     } else {
-      // If the server did not return a 201 CREATED response,
-      // then throw an exception.
       throw Exception('Failed to delete Note.');
     }
   }

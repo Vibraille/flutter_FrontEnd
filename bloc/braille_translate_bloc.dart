@@ -12,19 +12,10 @@ class BrailleBloc {
   final _brailleController = StreamController<String>();
   Sink<String> get imagePath => _brailleController.sink;
   late Stream<Note?> translateStream;
-  late String bearer;
-  late SharedPreferences sp;
 
-  BrailleBloc() {
-    getPreferences().whenComplete( () => {
-      bearer = sp.getString("accessToken")!});
-
+  BrailleBloc(SharedPreferences sp) {
       translateStream = _brailleController.stream.switchMap(
-          (imagePath) => _client.fetchTranslation(imagePath, bearer).asStream());
-  }
-
-  Future getPreferences() async{
-    sp = await SharedPreferences.getInstance();
+          (imagePath) => _client.fetchTranslation(imagePath, sp.getString("accessToken")!).asStream());
   }
 
   void dispose() {

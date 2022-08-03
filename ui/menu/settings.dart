@@ -10,47 +10,26 @@ class SettingsPage extends StatefulWidget{
 }
 
 class _SettingsState extends State<SettingsPage>{
-  bool _autoCapture = false;
-  double _brailleCells = 6;
-  bool _brailleCellsExpanded = false;
+  // bool _autoCapture = false;
+  // double _brailleCells = 6;
+  // bool _brailleCellsExpanded = false;
   double _vibrationIntensity = 3;
   bool _vibrationExpanded = false;
   double _fontSize = 30;
   bool _fontExpanded = false;
-  bool _borderHighlight = false;
-  bool _keyboardsExpanded = false;
+  // bool _borderHighlight = false;
+  // bool _keyboardsExpanded = false;
   String _defaultKeyboard = "Standard";
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: const Text('Settings', style: TextStyle(fontSize: 25),)),
         body: ListView(
           padding: EdgeInsets.zero,
           children: [
             ExpansionTile(
-                    title: menuText('Number of Braille Cells'),
-                    children: <Widget>[
-                      //slider,
-                      Slider(
-                        value: _brailleCells,
-                        min: 6,
-                        max: 12,
-                        divisions: 6,
-                        label: _brailleCells.round().toString(),
-                        onChanged: (value) {
-                          setState(() {
-                            _brailleCells = value;
-                          });
-                        },
-                      )
-                    ],
-                    onExpansionChanged: (bool expanded) {
-                      setState(() => _brailleCellsExpanded = expanded);
-                    },
-                  ),
-
-            ExpansionTile(
+              maintainState: true,
                   title: menuText('Vibration Intensity'),
                   children: <Widget>[
                   //slider,
@@ -71,9 +50,10 @@ class _SettingsState extends State<SettingsPage>{
                   setState(() => _vibrationExpanded = expanded);
                   },
                 ),
-
+            const Divider(thickness: 2,),
             ExpansionTile(
-                  title: menuText('Font Size'),
+              maintainState: true,
+                  title: menuText('Note Font Size'),
                   children: <Widget>[
                   //slider,
                   Slider(
@@ -93,54 +73,83 @@ class _SettingsState extends State<SettingsPage>{
                   setState(() => _fontExpanded = expanded);
                   },
               ),
-
-            ListTile(
-              title: menuText('Color Scheme'),
-              onTap: () {
-              },
-            ),
-
-            ExpansionTile(
-        title: menuText('Default Notes Keyboard'),
-        children: <Widget>[
-            keyBoardOption("Standard"),
-            keyBoardOption("Braille"),
-        ],
-        onExpansionChanged: (bool expanded) {
-          setState(() => _keyboardsExpanded = expanded);
-        },
-      ),
-
-            SwitchListTile(
-                title: menuText('Border Highlight'),
-                value: _borderHighlight ,
-                onChanged: (bool value) {
-                  setState(() {
-                    _borderHighlight  = value;
-                  });
-                },
-              ),
-
-            SwitchListTile(
-              title: menuText('Auto Capture'),
-              value: _autoCapture,
-              onChanged: (bool value) {
-                  setState(() {
-                  _autoCapture = value;
-                });
-            },
-           )
+            const Divider(thickness: 2,),
+            menuText("Color Scheme"),
           ],
-        )
+        ),
+      //       ExpansionTile(
+      //   title: menuText('Default Notes Keyboard'),
+      //   children: <Widget>[
+      //       keyBoardOption("Standard"),
+      //       keyBoardOption("Braille"),
+      //   ],
+      //   onExpansionChanged: (bool expanded) {
+      //     setState(() => _keyboardsExpanded = expanded);
+      //   },
+      // ),
+
+            // SwitchListTile(
+            //     title: menuText('Border Highlight'),
+            //     value: _borderHighlight ,
+            //     onChanged: (bool value) {
+            //       setState(() {
+            //         _borderHighlight  = value;
+            //       });
+            //     },
+            //   ),
+
+           //  SwitchListTile(
+           //    title: menuText('Auto Capture'),
+           //    value: _autoCapture,
+           //    onChanged: (bool value) {
+           //        setState(() {
+           //        _autoCapture = value;
+           //      });
+           //  },
+           // )  // ExpansionTile(
+            //             //         title: menuText('Number of Braille Cells'),
+            //             //         children: <Widget>[
+            //             //           //slider,
+            //             //           Slider(
+            //             //             value: _brailleCells,
+            //             //             min: 6,
+            //             //             max: 12,
+            //             //             divisions: 6,
+            //             //             label: _brailleCells.round().toString(),
+            //             //             onChanged: (value) {
+            //             //               setState(() {
+            //             //                 _brailleCells = value;
+            //             //               });
+            //             //             },
+            //             //           )
+            //             //         ],
+            //             //         onExpansionChanged: (bool expanded) {
+            //             //           setState(() => _brailleCellsExpanded = expanded);
+            //             //         },
+            //             //       ),
+
     );
 
+  }
+
+  SizedBox colorThemes(Color color) {
+    return SizedBox(
+      width: 10.0,
+      height: 10.0,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+            color: color
+        ),
+      ),
+    );
   }
 
   Text menuText(String text) {
     return Text(text,
       textAlign: TextAlign.center,
       semanticsLabel: text,
-      style: const TextStyle(height: 2, fontSize: 32,
+      style: const TextStyle(height: 2, fontSize: 35,
       ),
     );
   }
