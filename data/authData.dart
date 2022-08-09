@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'package:http/http.dart' as http;
 
 class AuthClient {
@@ -30,26 +29,6 @@ class AuthClient {
 
   }
 
-  Future<String?> verifyNumber(String phone, String code) async {
-    final response = await http.put(
-      Uri.parse("$_hostUrl/verify/phone/"),
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(<String, String>{
-        "phone_number": phone,
-        "verify_str": code
-      }),
-    );
-    if (response.statusCode == 200) {
-      return "Your phone number has been verified!";
-    } else if ((response.statusCode == 400)) {
-      return "Failed to verify your number. Please try again";
-    } else {
-      throw Exception('Failed to verify number.');
-    }
-  }
-
   Future<String?> verifyEmail(String email, String code) async {
     final response = await http.put(
       Uri.parse("$_hostUrl/verify/email/"),
@@ -64,7 +43,6 @@ class AuthClient {
     if (response.statusCode == 200) {
       return "Your email has been verified!";
     } else if ((response.statusCode == 400)) {
-      log(jsonDecode(response.body));
       return "Failed to verify your email. Please try again";
     } else {
       throw Exception('Failed to verify email.');
@@ -81,7 +59,6 @@ class AuthClient {
       "email": email,
     }),
     );
-    log(jsonDecode(response.body)["verification_email"]);
     if (response.statusCode == 200) {
       return jsonDecode(response.body)["verification_email"];
     } else if ((response.statusCode == 400)) {
@@ -100,8 +77,8 @@ class AuthClient {
       body: jsonEncode(loginCreds),
     );
     // Status code for no text detected
-    if (response.statusCode == 200) { //////////////////// 401 not verified
-      return Account.fromJson(jsonDecode(response.body), 200);
+    if (response.statusCode == 200 || response.statusCode == 401) { //////////////////// 401 not verified
+      return Account.fromJson(jsonDecode(response.body), response.statusCode);
     } else if (response.statusCode == 400 || response.statusCode == 500) {
       return Account.fromJson(jsonDecode(response.body), response.statusCode);
     } else {
@@ -181,7 +158,7 @@ class Account  {
 
   factory Account.fromJson(Map<String, dynamic> json, int status) {
 
-    return status != 200
+    return status == 401
         ? Account(
       statusCode: status,
         username: "",

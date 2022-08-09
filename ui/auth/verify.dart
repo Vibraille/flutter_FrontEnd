@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibra_braille/bloc/auth_bloc.dart';
 import 'package:vibra_braille/ui/auth/login.dart';
 import 'package:http/http.dart' as http;
@@ -10,7 +11,8 @@ import 'login.dart';
 class VerifyPage extends StatefulWidget {
   final String email;
   final String password;
-  const VerifyPage({super.key, required this.email,  required this.password});
+  final SharedPreferences sp;
+  const VerifyPage({super.key, required this.email,  required this.password, required this.sp});
 
   @override
   State<VerifyPage> createState() => _VerifyState();
@@ -32,7 +34,7 @@ class _VerifyState extends State<VerifyPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(),
+      appBar: AppBar(backgroundColor: const Color.fromRGBO(39, 71, 110, 1)),
         body: Container(
           alignment: Alignment.center,
            height: MediaQuery.of(context).size.height,
@@ -55,6 +57,7 @@ class _VerifyState extends State<VerifyPage> {
                   Text(_codeText, semanticsLabel: _codeText,style: const TextStyle(fontSize: 18),)]),
             SizedBox( width: 175, height: 45,
                 child: ElevatedButton(
+                  style: ButtonStyle(backgroundColor:  MaterialStateProperty.all(const Color.fromRGBO(39, 71, 110, 1)) ),
               onPressed: _handleSubmitted,
               child: const Text("Submit", semanticsLabel: "Submit",
                 style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),),
@@ -224,10 +227,11 @@ class _VerifyState extends State<VerifyPage> {
     });
     Future.delayed(const Duration(seconds: 2), () {
       Navigator.pop(context);
+      if (message != "") showInSnackBar(message);
+      Login({"email": widget.email, "password": widget.password}, context, widget.sp);
     });
 
-    if (message != "") showInSnackBar(message);
-    if (true) Login({"email": widget.email, "password": widget.password}, context);
+
   }
 
   void _handleSubmitted() {
@@ -236,7 +240,6 @@ class _VerifyState extends State<VerifyPage> {
       setState(() => {
         _codeText = "Entered code does not match sent verification code"
       });
-
     } else {
       verified(_code);
 

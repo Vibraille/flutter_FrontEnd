@@ -1,7 +1,4 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../menu/settings.dart';
@@ -24,6 +21,7 @@ class NotesState extends State<NotesPage> {
   bool isCheckBoxShowing = false;
   late List<bool> isChecked;
   List<int> toDelete = <int>[];
+  List<Note> noteDelete = <Note>[];
   List<Note>? allNotes;
 
 
@@ -35,7 +33,7 @@ class NotesState extends State<NotesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text('Notes'),
+        appBar: AppBar(title: const Text('Notes', style: TextStyle(fontSize: 28)),backgroundColor: const Color.fromRGBO(39, 71, 110, 1),
             actions: [ PopupMenuButton<int>(
           itemBuilder: (context) => [
             const PopupMenuItem<int>(value: 0, child: Text("New Note", semanticsLabel: "New Note",
@@ -68,17 +66,19 @@ class NotesState extends State<NotesPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      ElevatedButton(
+                      ElevatedButton( //backgroundColor: const Color.fromRGBO(39, 71, 110, 1)
+                          style: ButtonStyle(backgroundColor:  MaterialStateProperty.all(const Color.fromRGBO(39, 71, 110, 1)) ),
                           child: const Text('Delete', semanticsLabel: "Delete",
                             style: TextStyle(fontSize: 25),),
                           onPressed: () => {
-                            deleteChecked(),
+                            if (toDelete.isNotEmpty) deleteChecked(),
                             setState(() {
                               isCheckBoxShowing = false;
                             }),
                           }
                       ), const Padding(padding: EdgeInsets.only(left: 20, right: 20)),
                       ElevatedButton(
+                          style: ButtonStyle(backgroundColor:  MaterialStateProperty.all(const Color.fromRGBO(39, 71, 110, 1)) ),
                           child: const Text('Cancel', semanticsLabel: "Cancel",
                           style: TextStyle(fontSize: 25),),
                           onPressed: () => {
@@ -96,33 +96,17 @@ class NotesState extends State<NotesPage> {
   void selectedItem(BuildContext context, item) {
     switch (item) {
       case 0:
-        showDialog(
-            context: context,
-            builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('New Note', semanticsLabel: "New note tab",
-              style: TextStyle(fontSize: 30),),
-            content: const Text('Feature coming soon!',
-              semanticsLabel: "Feature coming soon!",
-              style: TextStyle(fontSize: 25),),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () =>  { Navigator.pop(context, 'Cancel')
-                },
-                child: const Text('Okay', semanticsLabel: "Okay", style: TextStyle(fontSize: 25),),
-              )]
-        );});
+        Navigator.of(context).pop();
+        Navigator.of(context).pop();
         break;
       case 1:
-
         setState(() {
           isCheckBoxShowing = true;
         });
-        log(isCheckBoxShowing.toString());
         break;
       case 2:
         Navigator.of(context)
-          .push(MaterialPageRoute(builder: (context) => const SettingsPage()));
+          .push(MaterialPageRoute(builder: (context) =>  SettingsPage(sp: widget.sp)));
         break;
     }
   }
@@ -164,14 +148,16 @@ class NotesState extends State<NotesPage> {
               style: const TextStyle(fontSize: 50),textAlign: TextAlign.center,),
             enableFeedback: true,
             onChanged: (value) {
-                    HapticFeedback.vibrate();
+                   FeedbackStrength(widget.sp.getInt("hapticFeedback")!);
                     setState(() {
                           isChecked[i] = value!;
                           int id = curNote.noteId;
                           if (isChecked[i]) {
                             toDelete.add(id);
+                            noteDelete.add(curNote);
                           } else {
                             toDelete.remove(id);
+                            noteDelete.remove(curNote);
                           }
                     });
             }) :
@@ -180,13 +166,12 @@ class NotesState extends State<NotesPage> {
           title: Text(curNote.title, semanticsLabel: curNote.title,
                     style: const TextStyle(fontSize: 50),textAlign: TextAlign.center,),
           onTap: () => {
-            setState(() {
-              allNotes = null;
-            }),
             Navigator.of(context)
                 .push(MaterialPageRoute(builder: (context) => NoteDetailsPage(note: curNote, sp: widget.sp)))
+                .then((value) => setState(() {allNotes = null;}),)
           });
         noteTiles.add(tile);
+        noteTiles.add(const Divider(thickness: 2,));
       }
       return  ListView(
         scrollDirection: Axis.vertical,
@@ -196,14 +181,11 @@ class NotesState extends State<NotesPage> {
     }
 
     deleteChecked() {
-    log(toDelete.toString());
       for (int i = 0; i < toDelete.length; i++) {
-        //allNotes!.remove(toDelete[i]);
+        allNotes!.remove(noteDelete[i]);
         final bloc = NoteBloc(widget.sp);
         // made calls to delete
         bloc.noteId.add(toDelete[i]);
-        log("to delete");
-        log(toDelete[i].toString());
         WidgetsBinding.instance.addPostFrameCallback((_){ showDialog(
             context: context,
             builder: (BuildContext context) {
@@ -214,25 +196,24 @@ class NotesState extends State<NotesPage> {
             }
         );},
         );});
-        log("delay2");
         Future.delayed(const Duration(seconds: 1), () {
           Navigator.pop(context);
         });
       }
-      Future.delayed(const Duration(seconds: 3), () {
-      });
-      if (toDelete.isNotEmpty) {
+
         setState(() {
           isCheckBoxShowing = false;
           toDelete.clear();
-          allNotes = null;
+          noteDelete.clear();
+          allNotes!.length;
+          //allNotes = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Selected Notes Deleted', semanticsLabel: "Selected Notes Deleted",),
           ),
         );
-      }
+
 
     }
 

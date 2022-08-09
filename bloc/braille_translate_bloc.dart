@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/brailleData.dart';
 import '../data/notesData.dart';
-
 import 'package:rxdart/rxdart.dart';
 
 class BrailleBloc {

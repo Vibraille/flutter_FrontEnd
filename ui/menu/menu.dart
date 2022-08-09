@@ -39,7 +39,7 @@ class Menu {
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => const SettingsPage(),
+                  builder: (context) => SettingsPage(sp: sp),
                 ));}),
           // ListTile(  title: menuText('Tutorial'),
           //   onTap: () {
@@ -62,11 +62,13 @@ class Menu {
                   MaterialPageRoute(builder: (context) => const LoginPage()),
                       (route) => false);
                     },
-                      child: const Text('Log out', semanticsLabel: "Log out",),
+                      child: const Text('Log out', semanticsLabel: "Log out",
+                      style: TextStyle(fontSize: 18),),
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, 'Cancel'),
-                      child: const Text('Cancel', semanticsLabel: "Cancel",),
+                      child: const Text('Cancel', semanticsLabel: "Cancel",
+                      style: TextStyle(fontSize: 18),),
                     )]
                 ),);
             },

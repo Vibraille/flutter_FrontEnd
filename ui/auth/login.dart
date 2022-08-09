@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibra_braille/bloc/auth_bloc.dart';
+import 'package:vibra_braille/ui/auth/privacy.dart';
 import 'package:vibra_braille/ui/auth/register.dart';
 import 'package:vibra_braille/ui/auth/verify.dart';
 
@@ -40,17 +40,17 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
     late DateTime lastLogin;
     late int difference;
     getPreferences().whenComplete(() => {
-      if (sp.containsKey("tokenExpiration") ) {
-        lastLogin = DateTime.fromMillisecondsSinceEpoch(sp.getInt("tokenExpiration")!),
-        difference = DateTime.now().difference(lastLogin).inDays,
-        if (difference < 6 ) {
-          Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => CameraPage(sp: sp)), (route) => false)
-        } else if (difference < 14) {
-          refreshToken(sp),
-        }
-      }
-    });
+        if (sp.containsKey("tokenExpiration") ) {
+          lastLogin = DateTime.fromMillisecondsSinceEpoch(sp.getInt("tokenExpiration")!),
+          difference = DateTime.now().difference(lastLogin).inDays,
+          if (difference < 6 ) {
+            Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => CameraPage(sp: sp)), (route) => false),
+          } else if (difference < 14) {
+            refreshToken(sp),
+          }
+        } });
+
 
     _tabController = TabController(
       initialIndex: 0,
@@ -64,12 +64,12 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
     sp = await SharedPreferences.getInstance();
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
+        backgroundColor: const Color.fromRGBO(39, 71, 110, 1),
         toolbarHeight: 75,
         title: TabBar(
           controller: _tabController,
@@ -96,7 +96,7 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
           ),
         ],
       ),
-
+      bottomSheet: PrivacyPolicy(context).getPolicyText(),
     );
   }
 
@@ -111,10 +111,10 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
             stream: bloc.tokenStream,
             builder: (context, snapshot) {
               if (snapshot.data != null && snapshot.data!.length == 2) {
-                log(sp.getString("accessToken")!);
+
                 sp.setString("refreshToken", snapshot.data![0]);
                 sp.setString("accessToken", snapshot.data![1]);
-                log(sp.getString("accessToken")!);
+
               }
               return const Center(child: CircularProgressIndicator());
             });
@@ -130,6 +130,7 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
   SizedBox loginButton(int method) {
     final button =  (method == 0) ?
     ElevatedButton(
+      style: ButtonStyle(backgroundColor:  MaterialStateProperty.all(const Color.fromRGBO(39, 71, 110, 1)) ),
       onPressed: () {
         _handleSubmitted(0);
       },
@@ -137,6 +138,7 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
         style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),),
     ) :
     ElevatedButton(
+      style: ButtonStyle(backgroundColor:  MaterialStateProperty.all(const Color.fromRGBO(39, 71, 110, 1)) ),
       onPressed: () {
         _handleSubmitted(1);
       },
@@ -164,14 +166,21 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
   loginMethod(int method) {
     Map<String,String> loginMethod = <String, String>{};
     if (method == 1) {
-      loginMethod["phone_number"] = inputPhone;
+      loginMethod["phone_number"] = formatPhone(inputPhone)!;
     } else if (method == 0) {
       loginMethod["email"] = inputEmail;
     }
     loginMethod["password"] = inputPass;
-    Login(loginMethod, context);
+    Login(loginMethod, context, sp);
   }
 
+  String? formatPhone(String? num) {
+    final remove = ['(', ')', ' ','-' ];
+    for (int i = 0; i < remove.length; i++) {
+      num = num?.replaceAll(remove[i], "");
+    }
+    return num;
+  }
 
   Row registration() {
     return Row( mainAxisAlignment: MainAxisAlignment.center,
@@ -181,7 +190,7 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => const RegisterPage(),
+                    builder: (context) => RegisterPage(sp: sp),
                   ),
                 );
               },
@@ -385,14 +394,15 @@ class UsNumberTextInputFormatter extends TextInputFormatter {
 class Login {
   late BuildContext context;
   late Map<String, String> creds;
+  late SharedPreferences sp;
 
-  Login(Map<String, String> loginMethod, this.context) {
+  Login(Map<String, String> loginMethod, this.context, SharedPreferences preferences) {
+    sp = preferences;
     creds = loginMethod;
     _login(loginMethod);
   }
 
-  _login(Map<String,String> loginMethod) {
-    log(loginMethod.toString());
+  _login(Map<String,String> loginMethod) async {
     final bloc = AuthBloc();
     bloc.loginUser.add(loginMethod);
     WidgetsBinding.instance.addPostFrameCallback((_){ showDialog(
@@ -404,9 +414,8 @@ class Login {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             } else if (snapshot.data != null) {
-              log(snapshot.data!.statusCode.toString());
               if (snapshot.data!.statusCode == 401) {
-                log("Verify!");
+                setPreferenceVerify();
                 return  const AlertDialog( content:
                 Text('Please verify your account', semanticsLabel: "Please verify your account",
                     style: TextStyle(fontSize: 30)));
@@ -426,46 +435,46 @@ class Login {
           });
       },
     );});
-    Future.delayed(const Duration(seconds: 3), () {
+    await Future.delayed(const Duration(seconds: 3), () {
       Navigator.pop(context);
+      action();
+
     });
-  action();
   }
 
 
   
+
+  setPreferenceVerify() {
+    sp.setBool("isVerified", false);
+  }
+
+  setPreferences(Account account) {
+      sp.setString("email", account.email);
+      sp.setString("username", account.username);
+      sp.setString("phone", account.phone);
+      sp.setString("refreshToken", account.refreshToken);
+      sp.setString("accessToken", account.accessToken);
+      sp.setInt("tokenExpiration",  DateTime.now().millisecondsSinceEpoch);
+
+  }
+
   action() {
-    Future.delayed(const Duration(seconds: 2), () {
-    });
-    SharedPreferences.getInstance().then((sp) => {
-    //   log(sp.containsKey("email").toString()),
-      if (sp.containsKey("email")) {
-        Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-        builder: (context) => CameraPage(sp: sp)), (
-        route) => false),
-    } else {
+    if (sp.containsKey("email")) {
+      sp.remove("isVerified");
+      sp.setInt("hapticFeedback", 3);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+              builder: (context) => CameraPage(sp: sp)), (
+          route) => false);
+    } else if (sp.containsKey("isVerified")) {
       Navigator.of(context)
           .push(MaterialPageRoute(builder: (context) =>
-      VerifyPage(email: creds["email"]!,
-      password: creds["password"]!))),
-    }}
-    );
+          VerifyPage(email: creds["email"]!,
+              password: creds["password"]!, sp: sp)));
+    }
 
 
   }
-
-  setPreferences(Account account) async {
-    SharedPreferences.getInstance().then((sp) => {
-          sp.setString("email", account.email),
-          sp.setString("username", account.username),
-          sp.setString("phone", account.phone),
-          sp.setString("refreshToken", account.refreshToken),
-          sp.setString("accessToken", account.accessToken),
-          sp.setInt("tokenExpiration",  DateTime.now().millisecondsSinceEpoch),
-
-    });
-  }
-
 
 }

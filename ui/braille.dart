@@ -1,11 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../bloc/braille_translate_bloc.dart';
 import '../bloc/notes_bloc.dart';
 import '../data/notesData.dart';
-import 'notes/note_details.dart';
+import 'menu/settings.dart';
 
 class DisplayBrailleScreen extends StatefulWidget {
   final String imagePath;
@@ -18,10 +17,9 @@ class DisplayBrailleScreen extends StatefulWidget {
 
 
 class _DisplayBrailleScreenState extends State<DisplayBrailleScreen> {
-  //int _numOfBrailleCells = 4;
   late int noteId;
-  final _titleController = TextEditingController();
   String title = "";
+  late Widget result;
 
 
   @override
@@ -31,18 +29,19 @@ class _DisplayBrailleScreenState extends State<DisplayBrailleScreen> {
       DeviceOrientation.landscapeRight,
       DeviceOrientation.landscapeLeft,
     ]);
+    result = _buildResult();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar( actions: [popUp(context)], backgroundColor: Colors.lightBlue,),
+      appBar: AppBar( actions: [popUp(context)], backgroundColor: const Color.fromRGBO(39, 71, 110, 1)),
       body:
     Container(
       alignment: Alignment.center,
       height: MediaQuery.of(context).size.height,
       padding: EdgeInsets.only(top: MediaQuery.of(context).size.height *.08),
-      child: _buildResult()
+      child: result
 
     ),//,
 
@@ -69,27 +68,30 @@ class _DisplayBrailleScreenState extends State<DisplayBrailleScreen> {
             builder: (BuildContext context) =>
                 AlertDialog(
                   content: const Text('Save to notes?',
-                      semanticsLabel: "Would you like to save to notes?"),
+                      semanticsLabel: "Would you like to save to notes?",
+                  style: TextStyle(fontSize: 25),),
                   actions: <Widget>[
                     TextButton(
                       onPressed: () => {Navigator.pop(context),
                         Navigator.pop(context),}, // pop context
                       child: const Text(
-                         'Save', semanticsLabel: "Save to notes ",),
+                         'Save', semanticsLabel: "Save to notes ",
+                      style: TextStyle(fontSize: 18),),
                     ),
                     TextButton(
                       onPressed: () => {
                         deleteNote(),
                         Navigator.of(context).pop(),
-                        Navigator.pop(context),
+                        // Navigator.pop(context),
                         },
-                      child: const Text("Don't Save", semanticsLabel: "Don't Save",),
+                      child: const Text("Don't Save", semanticsLabel: "Don't Save",
+                          style: TextStyle(fontSize: 18)),
                     ),
                     TextButton(
                       onPressed: () => {
                         Navigator.of(context).pop(),
                       },
-                      child: const Text("Cancel", semanticsLabel: "Cancel",),
+                      child: const Text("Cancel", semanticsLabel: "Cancel",style: TextStyle(fontSize: 18)),
                     ),
                   ],
                 ),
@@ -101,7 +103,6 @@ class _DisplayBrailleScreenState extends State<DisplayBrailleScreen> {
 
 
   Widget _buildResult() {
-
     final bloc = BrailleBloc(widget.sp);
     bloc.imagePath.add(widget.imagePath);
     return StreamBuilder<Note?>(
@@ -109,16 +110,7 @@ class _DisplayBrailleScreenState extends State<DisplayBrailleScreen> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.data != null) {
-          noteId = snapshot.data!.noteId;
-          return ListView(
-            scrollDirection: Axis.horizontal,
-            shrinkWrap: true,
-            children: BrailleTranslation(snapshot.data!.binary)
-                .getBrailleTranslation(),
-          );
-
-        } else {
+        } else if (snapshot.data == null) {
           return Center(child: AlertDialog( scrollable: true,
               title: const Text('No text detected', semanticsLabel: "No text detected in image",
                 style: TextStyle(fontSize: 30),),
@@ -132,6 +124,14 @@ class _DisplayBrailleScreenState extends State<DisplayBrailleScreen> {
                   child: const Text('Try again', semanticsLabel: "Try again", style: TextStyle(fontSize: 25),),
                 )]
           ));
+        } else {
+          noteId = snapshot.data!.noteId;
+          return ListView(
+            scrollDirection: Axis.horizontal,
+            shrinkWrap: true,
+            children: BrailleTranslation(snapshot.data!.binary, widget.sp)
+                .getBrailleTranslation(),
+          );
         }
       },
     );
@@ -155,14 +155,17 @@ class _DisplayBrailleScreenState extends State<DisplayBrailleScreen> {
       );});
       Future.delayed(const Duration(seconds: 1), () {
         Navigator.pop(context);
+        Navigator.pop(context);
       });
   }
 }
 class BrailleTranslation {
   List<BrailleCell> brailleCellList = <BrailleCell>[];
   List<Container> brailleTranslation = <Container>[];
+  late SharedPreferences sp;
 
-  BrailleTranslation(String binaryBraille) {
+  BrailleTranslation(String binaryBraille, SharedPreferences preferences) {
+    sp = preferences;
     buildTranslation(binaryBraille);
   }
 
@@ -182,7 +185,7 @@ class BrailleTranslation {
         isLastCell = false;
         binaryCell = binaryBraille.substring(start, end);
       }
-      brailleCellList.add(BrailleCell(isFirstCell, isLastCell, binaryCell));
+      brailleCellList.add(BrailleCell(isFirstCell, isLastCell, binaryCell, sp));
       start += 6;
       end += 6;
     }
@@ -192,7 +195,7 @@ class BrailleTranslation {
       if (i < len - 1) curCell.setNextCell(brailleCellList[i + 1]);
       brailleTranslation.add(
           Container(width: 160,
-              margin: const EdgeInsets.only(left: 20, right: 20),
+              margin: const EdgeInsets.only(left: 25, right: 25),
               alignment: Alignment.center,
               child: curCell.getBrailleCell())
       );
@@ -213,13 +216,17 @@ class BrailleCell {
   late BrailleCell next;
   List<bool> read = <bool>[false, false, false, false, false, false];
   late GridView _brailleCell;
+  late SharedPreferences sp;
+  int count = 1;
 
 
-  BrailleCell(bool isFirstCell, bool isLastCell, String binaryBraille) {
+  BrailleCell(bool isFirstCell, bool isLastCell, String binaryBraille, SharedPreferences preferences) {
+    sp = preferences;
     enabled = isFirstCell;
     _lastCell = isLastCell;
     isSpace = !binaryBraille.contains("1");
     _brailleCell = buildBrailleCell(binaryBraille);
+
   }
 
   GridView buildBrailleCell(String binaryBraille) {
@@ -230,6 +237,7 @@ class BrailleCell {
         read[positions[i]] = true;
         brailleCells.add(
             const FloatingActionButton(
+              heroTag: null,
               backgroundColor: Colors.white38,
               enableFeedback: false,
               mini: true,
@@ -238,11 +246,13 @@ class BrailleCell {
       } else if (binaryBraille[positions[i]] == "1"){
         brailleCells.add(
             FloatingActionButton(
+                heroTag: null,
+              backgroundColor: const Color.fromRGBO(34, 96, 178, 1),
               enableFeedback: enabled,
               mini: true,
               onPressed: () {
                 if (enabled) {
-                    HapticFeedback.vibrate();
+                  FeedbackStrength(sp.getInt("hapticFeedback")!);
                     read[positions[i]] = true;
                     if (isAllRead()) {
                       if (!_lastCell) {

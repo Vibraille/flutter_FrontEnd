@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'notesData.dart';
@@ -13,28 +13,32 @@ class BrailleClient {
     'Authorization': "Bearer $bearer",
       'Content-Type': "multipart/form-data",
     });
-    final path = await http.MultipartFile.fromPath('img', imagePath,
-        contentType: MediaType('image', 'jpg'), filename: "note.jpg");
+    request.files.add(http.MultipartFile(
+        'img',
+        File(imagePath).readAsBytes().asStream(),
+        File(imagePath).lengthSync(),
+        contentType: MediaType('image', 'jpg'),
+        filename: "note.jpg"
+    ));
 
-    request.files.add(path);
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-    log(jsonDecode(response.body).toString());
-    // // Status code for no text detected
-    if (response.statusCode == 201) {
+    final streamResponse = await request.send();
 
+
+    if (streamResponse.statusCode == 201 && streamResponse.contentLength! > 15) {
+      http.Response response = await http.Response.fromStream(streamResponse);
       Map<String, dynamic>  noteJson = jsonDecode(response.body);
       return Note.fromJson(noteJson, noteJson["id"]);
     } else
-      if (response.statusCode == 500) {
-       log(jsonDecode(response.body));
+      if (streamResponse.statusCode == 500) {
       return null; // if null pop up alert no text detected
     } else {
     // If the server did not return a 201 CREATED response,
     // then throw an exception.
     throw Exception('Failed to retrieve translation.');
-    }
+      }
 
   }
+
+
 
 }

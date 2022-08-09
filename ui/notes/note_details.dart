@@ -1,11 +1,12 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibra_braille/bloc/notes_bloc.dart';
 import '../../data/notesData.dart';
 import '../braille.dart';
+import '../menu/settings.dart';
 
 class NoteDetailsPage extends StatefulWidget {
   final Note note;
@@ -16,11 +17,13 @@ class NoteDetailsPage extends StatefulWidget {
   State<NoteDetailsPage> createState() => _NoteDetailState();
 }
 
-class _NoteDetailState extends State<NoteDetailsPage> with TickerProviderStateMixin {
+class _NoteDetailState extends State<NoteDetailsPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late TextEditingController _titleController;
-  double fontSize = 50;
+  late double fontSize;
   late String title;
+  late Widget actionButtons;
+
 
 
   @override
@@ -36,20 +39,28 @@ class _NoteDetailState extends State<NoteDetailsPage> with TickerProviderStateMi
       length: 3,
       vsync: this,
     );
-    _tabController.addListener(() {
-      setState(() => {
-          title = title
-      });
-    });
+    actionButtons = fontSizeButtons();
+    title = widget.note.title;
+    fontSize = widget.sp.containsKey("fontSize") ? widget.sp.getDouble("fontSize")! : 75;
   }
+
+
+  _handleTabChange() {
+      setState(() =>{
+        actionButtons = _tabController.index == 2 ?
+        const SizedBox() : fontSizeButtons()
+      });
+  }
+
+
   @override
   Widget build(BuildContext context) {
     Note note = widget.note;
-    title = note.title;
+    _tabController.addListener(_handleTabChange);
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: changeFontSize(),
-      appBar: AppBar (toolbarHeight: 35, centerTitle: true,
+      floatingActionButton: actionButtons,
+      appBar: AppBar (toolbarHeight: 35, centerTitle: true, backgroundColor: const Color.fromRGBO(39, 71, 110, 1),
             title: GestureDetector(
                 onTap: () {
                     changeTitle(note.noteId);
@@ -90,29 +101,35 @@ class _NoteDetailState extends State<NoteDetailsPage> with TickerProviderStateMi
     );
   }
 
-
-  Wrap text(Note note) {
-    return Wrap( children: [
-    SizedBox(height: MediaQuery.of(context).size.height,
-        child: ListView( children: [
+  SizedBox text(Note note) {
+    return
+    SizedBox(
+      height: MediaQuery.of(context).size.height,
+        child: SingleChildScrollView( child:
         Text(note.ascii, semanticsLabel: note.ascii,
-        style: TextStyle(fontSize: fontSize))]),
-        ),
-        // changeFontSize(),
-      ],
-
-    );
+        style: TextStyle(fontSize: fontSize))),
+        );
   }
-  Wrap brailleText(Note note) {
-    return Wrap ( children: [ SizedBox(
-          height: MediaQuery.of(context).size.height * 90,
-          child: ListView( children: [
-            Text(note.braille, semanticsLabel: note.ascii,
-                style: TextStyle(fontSize: fontSize))]),
-        ),
-        // changeFontSize(),
-      ],
-    );
+   SizedBox brailleText(Note note) {
+    List<String> unicode = note.braille.split(",");
+    String braille = "";
+    final Pattern unicodePattern = RegExp(r'\\u([0-9A-Fa-f]{4})');
+    for (int i = 0; i < unicode.length; i++) {
+      String str = "\\u${unicode[i]}";
+      final String unicodeStr = str.replaceAllMapped(unicodePattern, (Match unicodeMatch) {
+        final int hexCode = int.parse(unicodeMatch.group(1)!, radix: 16);
+        return String.fromCharCode(hexCode);
+      });
+      braille += unicodeStr;
+
+    }
+     return  SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: SingleChildScrollView( child:
+            Text(braille, semanticsLabel: note.ascii,
+                style: TextStyle(fontSize: fontSize * 1.1))),
+        );
+
   }
 
   Container braille(Note note) {
@@ -123,7 +140,7 @@ class _NoteDetailState extends State<NoteDetailsPage> with TickerProviderStateMi
         child: ListView(
           scrollDirection: Axis.horizontal,
           shrinkWrap: true,
-          children: BrailleTranslation(note.binary).getBrailleTranslation(), // num of braillecells here
+          children: BrailleTranslation(note.binary, widget.sp).getBrailleTranslation(),
         )
     );
   }
@@ -143,9 +160,9 @@ class _NoteDetailState extends State<NoteDetailsPage> with TickerProviderStateMi
             actions: <Widget>[
               TextButton(
                 onPressed: () => {
-                  Navigator.pop(context, 'Save'),
                   SetTitle(context, title, id, widget.sp),
-                }, // pop context
+                  setState(() => {})
+                },
                 child: const Text(
                   'Save', semanticsLabel: "Save title ",),
               ),
@@ -161,14 +178,15 @@ class _NoteDetailState extends State<NoteDetailsPage> with TickerProviderStateMi
   }
 
 
-  Row changeFontSize() {
-    return Row (
-      crossAxisAlignment: CrossAxisAlignment.end,
+  Row fontSizeButtons() {
+    return
+       Row ( crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         FloatingActionButton(
+           backgroundColor: const Color.fromRGBO(39, 71, 110, 1),
             onPressed: () => {
-              HapticFeedback.vibrate(),
+            FeedbackStrength(widget.sp.getInt("hapticFeedback")!),
               setState (() {
                  if (fontSize > 20) fontSize -= 5;
               })
@@ -176,10 +194,11 @@ class _NoteDetailState extends State<NoteDetailsPage> with TickerProviderStateMi
             child: const Icon(Icons.remove, size: 50)),
             const Padding(padding: EdgeInsets.only(right: 20)),
         FloatingActionButton(
+          backgroundColor: const Color.fromRGBO(39, 71, 110, 1),
             onPressed: () => {
-              HapticFeedback.vibrate(),
+            FeedbackStrength(widget.sp.getInt("hapticFeedback")!),
               setState (() {
-                if (fontSize < 150) fontSize += 5;
+                if (fontSize < 200) fontSize += 5;
               })
             },
             child: const Icon(Icons.add, size: 50)),
@@ -188,24 +207,6 @@ class _NoteDetailState extends State<NoteDetailsPage> with TickerProviderStateMi
     );
   }
 
-  // setOrientation() {
-  //   if (_tabController.indexIsChanging || _tabController.index != _tabController.previousIndex) {
-  //     // setState(() => {
-  //       log(_tabController.index.toString());
-  //       if (_tabController.index == 2) {
-  //         SystemChrome.setPreferredOrientations([
-  //           DeviceOrientation.landscapeRight,
-  //           DeviceOrientation.landscapeLeft,
-  //         ]);
-  //       } else{
-  //           SystemChrome.setPreferredOrientations([
-  //             DeviceOrientation.portraitUp,
-  //             DeviceOrientation.portraitDown,
-  //           ]);
-  //       }
-  //     // });
-  //   }
-  // }
 
   @override
   void dispose() {
@@ -223,7 +224,6 @@ class _NoteDetailState extends State<NoteDetailsPage> with TickerProviderStateMi
 
 class SetTitle {
   SetTitle(BuildContext context, String newTitle, int id , SharedPreferences sp) {
-    log(newTitle);
     final bloc = NoteBloc(sp);
     bloc.noteChange.add([id.toString(), newTitle]);
     WidgetsBinding.instance.addPostFrameCallback((_){ showDialog(
@@ -241,6 +241,7 @@ class SetTitle {
       },
     );});
     Future.delayed(const Duration(seconds: 1), () {
+      Navigator.pop(context);
       Navigator.pop(context);
     });
   }

@@ -1,29 +1,34 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibra_braille/bloc/auth_bloc.dart';
 import 'package:vibra_braille/data/authData.dart';
+import 'package:vibra_braille/ui/auth/privacy.dart';
 import 'package:vibra_braille/ui/auth/verify.dart';
 import 'login.dart';
 
 class RegisterPage extends StatelessWidget {
-  const RegisterPage({Key? key}) : super(key: key);
+  final SharedPreferences sp;
+  const RegisterPage({super.key, required this.sp});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar( backgroundColor: const Color.fromRGBO(39, 71, 110, 1),
         automaticallyImplyLeading: false,
-        title: const Text("Register"),
+        title: const Text("Register", semanticsLabel: "Register",
+        style: TextStyle(fontSize: 28),),
       ),
-      body: const Register(),
+      body: Register(sp: sp),
+      bottomSheet: PrivacyPolicy(context).getPolicyText(),
     );
   }
 }
 
 class Register extends StatefulWidget {
-  const Register({Key? key}) : super(key: key);
+  final SharedPreferences sp;
+  const Register({super.key, required this.sp});
 
   @override
   RegisterState createState() => RegisterState();
@@ -112,8 +117,7 @@ class _PasswordFieldState extends State<PasswordField> with RestorationMixin {
   }
 }
 
-class RegisterState extends State<Register>
-    with RestorationMixin {
+class RegisterState extends State<Register> with RestorationMixin {
   late PersonData person;
   late FocusNode _phoneNumber, _email, _password, _retypePassword;
   late RegisterAccount accountData;
@@ -181,26 +185,21 @@ class RegisterState extends State<Register>
       });
       Future.delayed(const Duration(seconds: 2), () {
         Navigator.pop(context);
+        if (isRegistered) {
+          Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => VerifyPage(email : accountData.email,
+                  password: person.password, sp: widget.sp)),
+                  (route) => false);
+
+        }
       });
-      log(isRegistered.toString());
-      if (isRegistered) {
-        log("ISREGISTERED");
-        Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-                builder: (context) => VerifyPage(email : accountData.email,
-                    password: person.password)
-            ),
-            ModalRoute.withName("/")
-        );
-      }
+
     }
   }
 
   Widget register() {
     final bloc = AuthBloc();
     bloc.user.add(person);
-    log(person.password);
     return StreamBuilder<RegisterAccount?>(
         stream: bloc.registerStream,
         builder: (context, snapshot) {
@@ -217,7 +216,6 @@ class RegisterState extends State<Register>
             Text('Failed to Register', semanticsLabel: "Failed to Register",
                 style: TextStyle(fontSize: 30)));
           }
-
 
         });
 
@@ -372,11 +370,14 @@ class RegisterState extends State<Register>
                 },
               ),
               sizedBoxSpace,
-              Center(
+              Center(  child:
+                SizedBox( width: 175, height: 45,
                 child: ElevatedButton(
+                  style: ButtonStyle(backgroundColor:  MaterialStateProperty.all(const Color.fromRGBO(39, 71, 110, 1)) ),
                   onPressed: _handleSubmitted,
-                  child: const Text("Sign Up", semanticsLabel: "Submit registration",),
-                ),
+                  child: const Text("Sign Up", semanticsLabel: "Submit registration",
+                      style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                )),
               ),
               sizedBoxSpace,
               Text(

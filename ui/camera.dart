@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'menu/menu.dart';
 import './braille.dart';
+import 'menu/settings.dart';
 
 // A screen that allows users to take a picture using a given camera.
 class CameraPage extends StatefulWidget {
@@ -82,7 +82,7 @@ class TakePictureScreenState extends State<Camera> {
     //   Navigator.pop(context);
     // });
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(backgroundColor: const Color.fromRGBO(39, 71, 110, 1)),
       drawer: Menu(context, widget.sp).menuDrawer,
       body: SizedBox(
         height: MediaQuery.of(context).size.height,
@@ -101,18 +101,13 @@ class TakePictureScreenState extends State<Camera> {
         height: 120,
         child:
         FloatingActionButton(
+          backgroundColor: const Color.fromRGBO(39, 71, 110, 1),
         enableFeedback: true,
         // Provide an onPressed callback.
         onPressed: () async {
-          HapticFeedback.vibrate();
-          // Take the Picture in a try / catch block. If anything goes wrong,
-          // catch the error.
+          FeedbackStrength(widget.sp.getInt("hapticFeedback")!);
           try {
-            // Ensure that the camera is initialized.
             await _initializeControllerFuture;
-
-            // Attempt to take a picture and get the file `image`
-            // where it was saved.
             final image = await _controller.takePicture();
 
             // If the picture was taken, display it on a new screen.
@@ -125,7 +120,7 @@ class TakePictureScreenState extends State<Camera> {
             );
           } catch (e) {
             // If an error occurs, log the error to the console.
-            print(e);
+
           }
         },
         child: const Icon(Icons.camera_alt, size: 60,),

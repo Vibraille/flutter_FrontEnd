@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:http/http.dart' as http;
 
@@ -16,7 +15,6 @@ class NotesClient {
           'Content-Type': "multipart/form-data"
         }
     );
-    log(response.statusCode.toString());
     // Status code for no text detected
     if (response.statusCode == 200) {
       String jsonStr = json.decode(response.body).toString();
@@ -100,7 +98,6 @@ class NotesClient {
           'Authorization': "Bearer $bearer",
         }
     );
-    // log(response.body.toString());
     // Status code for no text detected
     if (response.statusCode == 200) {
       return "Note deleted successfully";
