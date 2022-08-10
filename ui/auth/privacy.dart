@@ -65,8 +65,9 @@ class PrivacyPolicy {
     context = currentContext;
 }
   Container getPolicyText() {
-    return Container( padding: const EdgeInsets.only(left: 50, bottom: 10),
-        child: GestureDetector(
+    return Container( padding: const EdgeInsets.only(bottom: 20),
+        child:
+        GestureDetector(
       onTap: () => {
       showDialog(
           context: context,
@@ -75,7 +76,7 @@ class PrivacyPolicy {
               scrollable: true,
                 title: const Text('Privacy Policy\nEffective on August 6, 2022', semanticsLabel: "Privacy Policy",
                   style: TextStyle(fontSize: 20),),
-                content: const Text(policy,
+                content: const Text(policy, semanticsLabel: policy,
                   style: TextStyle(fontSize: 14),),
                 actions: <Widget>[
                   TextButton(
@@ -85,11 +86,13 @@ class PrivacyPolicy {
                   )]
             );})
         },
-      child: Row( children: const [
-        Text("Please review our ",   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      child: Row(  mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+        Text("Please review our ",
+          style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,),
-      Text(" Privacy Policy", semanticsLabel: "Review Privacy Policy",
-        style: TextStyle(color: Colors.blue, fontSize: 22, fontWeight: FontWeight.bold),
+      Text(" Privacy Policy", semanticsLabel: "Please review our Privacy Policy",
+        style: TextStyle(color: Colors.blue, fontSize: 19, fontWeight: FontWeight.bold),
       textAlign: TextAlign.center,)])
     ));
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'menu/menu.dart';
 import './braille.dart';
@@ -65,22 +66,29 @@ class TakePictureScreenState extends State<Camera> {
       enableAudio: false,
     );
     _initializeControllerFuture = _controller.initialize();
+    _controller.lockCaptureOrientation();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
   }
 
 
   @override
   void dispose() {
     // Dispose of the controller when the widget is disposed.
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // create a CameraController.
-    // Future.delayed(const Duration(milliseconds: 1), () {
-    //   Navigator.pop(context);
-    // });
     return Scaffold(
       appBar: AppBar(backgroundColor: const Color.fromRGBO(39, 71, 110, 1)),
       drawer: Menu(context, widget.sp).menuDrawer,

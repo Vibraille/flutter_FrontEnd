@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,7 +6,6 @@ import 'package:vibra_braille/bloc/auth_bloc.dart';
 import 'package:vibra_braille/ui/auth/privacy.dart';
 import 'package:vibra_braille/ui/auth/register.dart';
 import 'package:vibra_braille/ui/auth/verify.dart';
-
 import '../../data/authData.dart';
 import '../camera.dart';
 
@@ -37,6 +35,10 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     late DateTime lastLogin;
     late int difference;
     getPreferences().whenComplete(() => {
@@ -66,7 +68,8 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return
+      Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: const Color.fromRGBO(39, 71, 110, 1),
@@ -85,17 +88,15 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
           ],
         ),
       ),
-      body: TabBarView(
+      body: 
+      TabBarView(
         controller: _tabController,
         children: <Widget>[
-          Center(
-            child: emailLogin(),
-          ),
-          Center(
-            child: phoneLogin(),
-          ),
-        ],
-      ),
+          SingleChildScrollView(
+           child: emailLogin()),
+        SingleChildScrollView( child:
+            phoneLogin()),
+        ],),
       bottomSheet: PrivacyPolicy(context).getPolicyText(),
     );
   }
@@ -185,7 +186,7 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
   Row registration() {
     return Row( mainAxisAlignment: MainAxisAlignment.center,
         children: [ const Text("Don't have an account?",semanticsLabel: "Don't have an account?",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),),
           GestureDetector(
               onTap: () {
                 Navigator.of(context).push(
@@ -196,24 +197,25 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
               },
               child: const Text(" Register Now", semanticsLabel: "Register Now",
                 style: TextStyle(fontWeight: FontWeight.bold,
-                    color: Colors.blue, fontSize: 18),)
+                    color: Colors.blue, fontSize: 17),)
           )
         ]);
   }
 
   Container logo() {
+
     return Container(
-      height: 230.0,
-      padding: const EdgeInsets.only(top: 50),
+      height:  MediaQuery.of(context).size.height  * .25 ,
+      padding: const EdgeInsets.only(top: 30),
       child: Center(
-        child: Image.asset('assets/logo.png', height: 300,),
+        child: Image.asset('assets/logo.png', height: MediaQuery.of(context).size.height  * .3,),
       ),);
   }
 
   Column emailLogin() {
     return Column(
-      children: [  const Padding(padding: EdgeInsets.only(top: 35)), logo(),
-        const Padding(padding: EdgeInsets.only(top: 50, bottom: 20)),
+      children: [ logo(),
+        const Padding(padding: EdgeInsets.only(top: 10, bottom: 15)),
         SizedBox(
           width: MediaQuery.of(context).size.width * .8,
           child: Column(
@@ -223,7 +225,6 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
               },
               textInputAction: TextInputAction.next,
               decoration: InputDecoration(
-
                 filled: true,
                // icon: const Icon(Icons.email),
                 hintText: "Enter your email address",
@@ -246,13 +247,11 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
 
   Column phoneLogin() {
     return Column(
-        children: [  const Padding(padding: EdgeInsets.only(top: 35)),
-          logo(), const Padding(padding: EdgeInsets.only(top: 52, bottom: 18)),
+        children: [
+          logo(), const Padding(padding: EdgeInsets.only(top: 15, bottom: 10)),
           SizedBox(
             width: MediaQuery.of(context).size.width * .8,
             child: Column( children: [
-              // width: 250.0,
-              //child:
             TextField(
                 onChanged: (value) => {
                   inputPhone = value
@@ -348,6 +347,12 @@ class _LoginState extends State<LoginPage> with TickerProviderStateMixin {
     _emailController.dispose();
     _passwordController.dispose();
     _tabController.dispose();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     super.dispose();
   }
 }
@@ -460,6 +465,7 @@ class Login {
   }
 
   action() {
+
     if (sp.containsKey("email")) {
       sp.remove("isVerified");
       sp.setInt("hapticFeedback", 3);

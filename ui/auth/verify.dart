@@ -35,25 +35,24 @@ class _VerifyState extends State<VerifyPage> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(backgroundColor: const Color.fromRGBO(39, 71, 110, 1)),
-        body: Container(
-          alignment: Alignment.center,
+        body: SizedBox(
            height: MediaQuery.of(context).size.height,
             width: MediaQuery.of(context).size.width,
-            child: Column(
+            child: SingleChildScrollView( child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Padding(padding: EdgeInsets.all(65)),
+            const Padding(padding: EdgeInsets.all(20)),
             const Text(" Please verify your email", semanticsLabel: "Please verify your email",
-              style: TextStyle(fontSize: 32),),
+              style: TextStyle(fontSize: 30),),
             const Padding(padding: EdgeInsets.all(15)),
                   const Text("Verification code sent to: ", semanticsLabel: "Verification sent to your email",
-                    style: TextStyle(fontSize: 30),),
+                    style: TextStyle(fontSize: 28),),
                   Text(widget.email,
-                    style: const TextStyle(fontSize: 29, fontWeight: FontWeight.bold),),
+                    style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),),
             const Padding(padding: EdgeInsets.all(30)),
             pin(), const Padding(padding: EdgeInsets.only(bottom: 5)),
             Row(crossAxisAlignment: CrossAxisAlignment.start,
-                children: [const Padding(padding: EdgeInsets.only(left: 50, bottom: 75)),
+                children: [const Padding(padding: EdgeInsets.only(left: 50, bottom: 50)),
                   Text(_codeText, semanticsLabel: _codeText,style: const TextStyle(fontSize: 18),)]),
             SizedBox( width: 175, height: 45,
                 child: ElevatedButton(
@@ -75,7 +74,7 @@ class _VerifyState extends State<VerifyPage> {
                   ),
                 ])
           ],
-        ))
+        )))
     );
 
   }

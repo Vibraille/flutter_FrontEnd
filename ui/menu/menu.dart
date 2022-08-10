@@ -23,7 +23,7 @@ class Menu {
           style: const TextStyle(fontSize: 40),),
           const Padding(padding: EdgeInsets.only(top: 20)),
            const Divider(thickness: 2,)]),
-          ListTile( contentPadding: const EdgeInsets.only(top: 30, left: 40),
+          ListTile( contentPadding: const EdgeInsets.only(top: 30, left: 30),
              leading: const Icon(Icons.sticky_note_2_outlined, size: 45),
             title: Transform.translate( offset: const Offset(-35, 0),
             child:  menuText('Notes')),
@@ -32,7 +32,7 @@ class Menu {
                 MaterialPageRoute(
                   builder: (context) => NotesPage(sp: sp),
                 ));}),
-          ListTile( contentPadding: const EdgeInsets.only(top: 15, left: 40),
+          ListTile( contentPadding: const EdgeInsets.only(top: 15, left: 30),
               leading: const Icon(Icons.settings, size: 45,),
             title: Transform.translate( offset: const Offset(-15, 0),
               child:  menuText('Settings')),
@@ -45,7 +45,7 @@ class Menu {
           //   onTap: () {
           //   },),
 
-          ListTile( contentPadding: const EdgeInsets.only(top: 15, left: 45),
+          ListTile( contentPadding: const EdgeInsets.only(top: 15, left: 35),
             leading: const Icon(Icons.logout, size: 42,color: Colors.redAccent,),
             title: Transform.translate( offset: const Offset(-25, 0),
                 child: menuText('Logout')),
@@ -85,7 +85,7 @@ class Menu {
     return Text(text,
        textAlign: TextAlign.center,
        semanticsLabel: text,
-        style: const TextStyle( fontSize: 45,
+        style: const TextStyle( fontSize: 40,
         ),
     );
   }
